@@ -18,7 +18,7 @@ int serverSocket;
 struct sockaddr_in serverAddr;
 socklen_t serverAddrLen = sizeof(serverAddr);
 list<pthread_t> childThreads;
-vector<Question> questions;
+vector<Question> question_bank;
 
 int giveExam(int clientSocket)
 {
@@ -26,46 +26,44 @@ int giveExam(int clientSocket)
     input : clientSocket*/
     pthread_t ptid = pthread_self();
     int answer, score = 0, len;
-    for (int i = 0; i < questions.size(); i++)
+    textsendtype *textToSend = new textsendtype;
+    for (int i = 0; i < question_bank.size(); i++)
     {
-        string text = questions[i].printQuestion();
-        len = text.length();
-        if (send(clientSocket, &len, sizeof(len), 0) <= 0)
+        strcpy(textToSend->buffer, question_bank[i].printQuestion().c_str());
+        textToSend->bytesRead = question_bank[i].printQuestion().length();
+        textToSend->buffer[textToSend->bytesRead] = '\0';
+        if (send(clientSocket, textToSend, sizeof(*textToSend), 0) <= 0)
         {
-            perror("Transmission Error: ");
-            pthread_exit(&ptid);
-        }
-        if (send(clientSocket, text.c_str(), text.length(), 0) <= 0)
-        {
-            perror("Transmission Error: ");
+            perror("Transmission Error");
             pthread_exit(&ptid);
         }
         if (recv(clientSocket, &answer, sizeof(answer), 0) <= 0)
         {
-            perror("Receiving Error: ");
+            perror("Receiving Error");
             pthread_exit(&ptid);
         }
         cout << answer << endl;
-        if (answer == questions[i].getCorrectOption())
+        if (answer == question_bank[i].getCorrectOption())
         {
             score++;
         }
     }
     len = 4;
-    send(clientSocket, &len, sizeof(len), 0);
-    send(clientSocket, "EOE", 4, 0);
+    strcpy(textToSend->buffer, "EOE");
+    textToSend->buffer[3] = '\0';
+    send(clientSocket, textToSend, sizeof(*textToSend), 0);
     return score;
 }
 
 vector<Question> &parseQuestionFile(const string &file_path)
 {
-    static vector<Question> question_bank;
+    question_bank.clear();
     ifstream file(file_path);
 
     if (!file.is_open())
     {
         cerr << "Failed to open the file: " << file_path << endl;
-        return questions;
+        return question_bank;
     }
 
     string line;
@@ -136,29 +134,23 @@ void *handleClient(void *arg)
         case SET_Q_REQUEST:
         {
             ofstream outFile(questionFilePath, ios::binary);
-            char buffer[1024];
-            int bytesRead, code;
+            int bytesRead;
+            textsendtype *newtext = new textsendtype;
             while (true)
             {
-                bytesRead = recv(clientSocket, &code, sizeof(code), 0);
-                cout << code << endl;
-                if (code == Q_END_SIG)
+                recv(clientSocket, newtext, sizeof(*newtext), 0);
+                if (newtext->code != Q_END_SIG)
                 {
-                    break;
+                    outFile.write(newtext->buffer, newtext->bytesRead);
+                    cout << newtext->buffer << endl;
                 }
                 else
-                {
-                    bytesRead = recv(clientSocket, buffer, sizeof(buffer), 0);
-                    cout << bytesRead << endl;
-                    buffer[bytesRead] = '\0';
-                    outFile.write(buffer, bytesRead);
-                    // cout << buffer << endl;
-                }
+                    break;
             }
             cout << "END" << endl;
             outFile.close();
-            questions.clear();
-            questions = parseQuestionFile(questionFilePath);
+            question_bank.clear();
+            question_bank = parseQuestionFile(questionFilePath);
             code = SET_Q_ACK;
             send(clientSocket, &code, sizeof(code), 0);
             break;
@@ -167,9 +159,9 @@ void *handleClient(void *arg)
         {
             pthread_t ptid = pthread_self();
             int answer, score = 0, len;
-            for (int i = 0; i < questions.size(); i++)
+            for (int i = 0; i < question_bank.size(); i++)
             {
-                string text = questions[i].printQuestion();
+                string text = question_bank[i].printQuestion();
                 len = text.length();
                 if (send(clientSocket, &len, sizeof(len), 0) <= 0)
                 {
@@ -198,12 +190,12 @@ void *handleClient(void *arg)
 void *handleConnections(void *arg)
 {
     // Handling connections
-    for (int i = 0; i < 5; i++)
+    while (true)
     {
         int clientSocket;
         if ((clientSocket = accept(serverSocket, (sockaddr *)&serverAddr, &serverAddrLen)) == -1)
         {
-            perror("Accepting: ");
+            perror("Accepting");
             exit(1);
         }
         pthread_t temp;
@@ -275,7 +267,7 @@ int main()
     int choice;
     while (true)
     {
-        cout << "Enter operation:\n1)Q SET\n2)Display questions\n3)Exit" << endl;
+        cout << "Enter operation:\n1)Q SET\n2)Display question_bank\n3)Exit" << endl;
         cin >> choice;
         switch (choice)
         {
@@ -285,12 +277,12 @@ int main()
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
             cout << "Enter path to text file: ";
             getline(cin, qfpath);
-            questions = parseQuestionFile(qfpath);
+            question_bank = parseQuestionFile(qfpath);
             break;
         }
         case 2:
         {
-            for (auto question : questions)
+            for (auto question : question_bank)
             {
                 string q = question.printQuestion();
                 cout << q << endl;

@@ -12,6 +12,13 @@
 #include "definitions.h"
 using namespace std;
 
+struct textsendtype
+{
+    char buffer[2048];
+    int code;
+    int bytesRead;
+};
+
 class Question
 {
 private:

@@ -84,30 +84,23 @@ void Student::startExam(int clientSocket)
 {
     int code = EXAM_START_REQUEST, score;
     send(clientSocket, &code, sizeof(code), 0);
-    char buffer[1024];
-    int len;
     bool examend = false;
-    int bytesRead;
     while (true)
     {
-        if (recv(clientSocket, &len, sizeof(len), 0) <= 0)
+        textsendtype *textToRead = new textsendtype;
+        if (recv(clientSocket, textToRead, sizeof(*textToRead), 0) <= 0)
         {
-            perror("Length Receive Error: ");
+            perror("Question Receiving Error");
             exit(1);
         }
-        if ((bytesRead = recv(clientSocket, buffer, len, 0)) <= 0)
-        {
-            perror("Question Receive Error: ");
-            exit(1);
-        }
-        buffer[bytesRead] = '\0';
         int answer;
-        if (strcmp(buffer, "EOE") == 0)
+        if (strcmp(textToRead->buffer, "EOE") == 0)
         {
             examend = true;
             break;
         }
-        cout << buffer << endl
+        system("clear");
+        cout << textToRead->buffer << endl
              << "A: ";
         cin >> answer;
         send(clientSocket, &answer, sizeof(answer), 0);
@@ -136,16 +129,18 @@ string Teacher::getUserType()
 void Teacher::setQuestions(int &clientSocket, string &filepath)
 {
     ifstream questionFile(filepath, ios::binary);
-    char buffer[1024];
-    int bytesRead, code = SET_Q_REQUEST;
+    textsendtype *textToSend = new textsendtype;
+    int bytesRead;
     while (!questionFile.eof())
     {
-        send(clientSocket, &code, sizeof(code), 0);
-        questionFile.read(buffer, sizeof(buffer));
-        bytesRead = questionFile.gcount();
-        send(clientSocket, buffer, bytesRead, 0);
-        cout << buffer << endl;
+        questionFile.read(textToSend->buffer, sizeof(textToSend->buffer));
+        textToSend->bytesRead = questionFile.gcount();
+        textToSend->code = SET_Q_REQUEST;
+        send(clientSocket, textToSend, sizeof(*textToSend), 0);
+        cout << textToSend->buffer << endl;
     }
+    textToSend->code = Q_END_SIG;
+    send(clientSocket, textToSend, sizeof(*textToSend), 0);
     questionFile.close();
 }
 
@@ -369,9 +364,6 @@ int Client::requests()
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 getline(cin, filePath);
                 teacher->setQuestions(this->clientSocket, filePath);
-                sleep(3);
-                code = Q_END_SIG;
-                send(this->clientSocket, &code, sizeof(code), 0);
                 cout << "DONE" << endl;
                 recv(this->clientSocket, &code, sizeof(code), 0);
                 if (code == SET_Q_ACK)

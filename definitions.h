@@ -1,7 +1,7 @@
 #define clientDirectory "/home/oishik/OS Project/clients/"
 #define communicationDirectory "/home/oishik/OS Project/communication/"
-#define registerFilePath "/home/oishik/OS Project/register/registeredUsers.txt"
-#define questionFilePath "/home/oishik/OS Project/question_bank/temp.txt"
+#define registerFilePath "register/registeredUsers.txt"
+#define questionFilePath "question_bank/temp.txt"
 
 #define seek_comm_front                \
     communicationFile.seekg(ios::beg); \
