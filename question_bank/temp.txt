@@ -1,0 +1,5 @@
+What is the capital of France?|London|Paris|Berlin|Madrid|2
+Which planet is known as the Red Planet?|Mars|Venus|Jupiter|Saturn|1
+What is the largest mammal in the world?|Elephant|Giraffe|Blue Whale|Lion|3
+Which gas do plants absorb from the atmosphere during photosynthesis?|Oxygen|Carbon Dioxide|Nitrogen|Hydrogen|2
+What is the chemical symbol for gold?|Au|Ag|Fe|Cu|1
