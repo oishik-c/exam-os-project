@@ -4,4 +4,6 @@ server_shm.cpp
 client_shm.cpp
 functions.h
 classes.h
-.vscode
+questions.txt
+.vscode/*
+build/*
