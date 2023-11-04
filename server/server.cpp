@@ -11,10 +11,10 @@
 #include <pthread.h>
 #include "definitions.h"
 #include "newclasses.h"
-
 using namespace std;
 
-// Jishnur comment
+sem_t *regFileSemaphore = sem_open("/semaphore-rf", O_CREAT, S_IRUSR | S_IWUSR, 0);
+
 int serverSocket;
 struct sockaddr_in serverAddr;
 socklen_t serverAddrLen = sizeof(serverAddr);
@@ -150,6 +150,7 @@ void *handleClient(void *arg)
             outFile.close();
             question_bank.clear();
             question_bank = parseQuestionFile(questionFilePath);
+            remove(questionFilePath);
             code = SET_Q_ACK;
             send(clientSocket, &code, sizeof(code), 0);
             break;
@@ -179,12 +180,18 @@ void *handleClient(void *arg)
         }
         case RGSTR_REQ:
         {
+            sem_post(regFileSemaphore);
             registerUser(clientSocket);
+            sem_wait(regFileSemaphore);
             break;
         }
         case LGN_REQ:
+        {
+            sem_post(regFileSemaphore);
             login(clientSocket);
+            sem_wait(regFileSemaphore);
             break;
+        }
         }
         if (endflag)
             break;
@@ -259,8 +266,8 @@ int main()
             cout << ifa->ifa_name << ": " << ip << endl;
         }
     }
-
     freeifaddrs(ifaddr);
+
     cout << "Server listening on port 12345..." << endl;
 
     pthread_t clienthandler;

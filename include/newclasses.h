@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <cstring>
 #include <cstdlib>
+#include <semaphore.h>
+#include <fcntl.h>
 #include "definitions.h"
 using namespace std;
 

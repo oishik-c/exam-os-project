@@ -7,3 +7,4 @@ classes.h
 questions.txt
 .vscode/*
 build/*
+question_bank/*
