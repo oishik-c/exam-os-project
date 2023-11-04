@@ -7,12 +7,11 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <ifaddrs.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <sys/socket.h>
 #include <pthread.h>
 #include "definitions.h"
 #include "newclasses.h"
+
 using namespace std;
 
 int serverSocket;

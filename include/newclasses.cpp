@@ -1,12 +1,18 @@
 #include "newclasses.h"
 
-string xorShiftEncrypt(const string &text, const string &key)
+string encryptString(const string &input, int shift)
 {
-    std::string encrypted = text;
-    for (size_t i = 0; i < text.size(); ++i)
+    string encrypted = input;
+
+    for (char &c : encrypted)
     {
-        encrypted[i] ^= key[i % key.size()];
+        if (isalpha(c))
+        {
+            char base = islower(c) ? 'a' : 'A';
+            c = static_cast<char>(base + (c - base + shift) % 26);
+        }
     }
+
     return encrypted;
 }
 
@@ -179,8 +185,8 @@ bool isUsernameUnique(const string &username)
 
 void registerUser(int &clientSocket)
 {
-    int code;
-    string uname, pword, uid, utype, key, hashedPassword;
+    int code, key;
+    string uname, pword, uid, utype, hashedPassword;
     userinfosendtype *newUserInfo = new userinfosendtype;
     while (true)
     {
@@ -205,19 +211,21 @@ void registerUser(int &clientSocket)
     pword = newUserInfo->password;
     uid = newUserInfo->id;
     utype = newUserInfo->type;
-    key = "oogaboooga";
-    hashedPassword = xorShiftEncrypt(pword, key);
+    key = 13;
+    hashedPassword = encryptString(pword, key);
     ofstream registerFileWriter(registerFilePath, ios::app);
     if (registerFileWriter.is_open())
     {
-        registerFileWriter << uname << "|" << hashedPassword << "|" << newUserInfo->type << "|" << newUserInfo->id << "|" << key << "\n";
+        registerFileWriter << uname << "|" << hashedPassword << "|" << newUserInfo->type << "|" << newUserInfo->id << "\n";
         registerFileWriter.close();
         code = RGSTR_SCCSFL;
     }
     else
     {
+        perror("FILENOTOPEN");
         code = NO_SGNL;
     }
+    cout << hashedPassword << uname << endl;
     send(clientSocket, &code, sizeof(code), 0);
 }
 
@@ -293,8 +301,8 @@ void login(int &clientSocket)
                         if (pos4 != string::npos)
                         {
                             string storedId = storedIdSalt.substr(0, pos4);
-                            string key = storedIdSalt.substr(pos4 + 1);
-                            string generatedPassword = xorShiftEncrypt(newUserInfo->password, key);
+                            int key = 13;
+                            string generatedPassword = encryptString(newUserInfo->password, key);
                             if (newUserInfo->username == storedUsername && generatedPassword == storedPassword && newUserInfo->type == storedUserType)
                                 code = LGN_SCCSFL;
                             else
@@ -377,43 +385,38 @@ Client::Client()
          << endl;
 
     int choice;
-    while (true)
+    system("clear");
+    cout << register_menu << "Choice: ";
+    cin >> choice;
+    switch (choice)
     {
-        system("clear");
-        cout << register_menu << "Choice: ";
-        cin >> choice;
-        switch (choice)
-        {
-        case 1:
-        {
-            int code = RGSTR_REQ;
-            send(clientSocket, &code, sizeof(code), 0);
-            string userType;
-            cout << "Are you a student or a teacher?(S for Student, T for Teacher) ";
-            cin >> userType;
-            this->user = registerUserHelper(this->clientSocket, userType);
-            break;
-        }
-        case 2:
-        {
-            int code = LGN_REQ;
-            send(clientSocket, &code, sizeof(code), 0);
-            string userType;
-            cout << "Are you a student or a teacher?(S for Student, T for Teacher) ";
-            cin >> userType;
-            this->user = loginHelper(this->clientSocket, userType);
-            break;
-        }
-        case 3:
-        {
-            cout << "Exiting!!" << endl;
-            endconnection(this->clientSocket);
-            close(this->clientSocket);
-            exit(0);
-        }
-        }
-        if (this->user)
-            break;
+    case 1:
+    {
+        int code = RGSTR_REQ;
+        send(clientSocket, &code, sizeof(code), 0);
+        string userType;
+        cout << "Are you a student or a teacher?(S for Student, T for Teacher) ";
+        cin >> userType;
+        this->user = registerUserHelper(this->clientSocket, userType);
+        break;
+    }
+    case 2:
+    {
+        int code = LGN_REQ;
+        send(clientSocket, &code, sizeof(code), 0);
+        string userType;
+        cout << "Are you a student or a teacher?(S for Student, T for Teacher) ";
+        cin >> userType;
+        this->user = loginHelper(this->clientSocket, userType);
+        break;
+    }
+    case 3:
+    {
+        cout << "Exiting!!" << endl;
+        endconnection(this->clientSocket);
+        close(this->clientSocket);
+        exit(0);
+    }
     }
 }
 
