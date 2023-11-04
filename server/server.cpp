@@ -26,7 +26,7 @@ int giveExam(int clientSocket)
     /* Function to handle the examination of a client
     input : clientSocket*/
     pthread_t ptid = pthread_self();
-    int answer, score = 0, len;
+    int answer, score = 0;
     textsendtype *textToSend = new textsendtype;
     for (int i = 0; i < question_bank.size(); i++)
     {
@@ -49,7 +49,6 @@ int giveExam(int clientSocket)
             score++;
         }
     }
-    len = 4;
     strcpy(textToSend->buffer, "EOE");
     textToSend->buffer[3] = '\0';
     send(clientSocket, textToSend, sizeof(*textToSend), 0);
@@ -135,7 +134,6 @@ void *handleClient(void *arg)
         case SET_Q_REQUEST:
         {
             ofstream outFile(questionFilePath, ios::binary);
-            int bytesRead;
             textsendtype *newtext = new textsendtype;
             while (true)
             {
@@ -159,7 +157,7 @@ void *handleClient(void *arg)
         case SEE_Q_REQUEST:
         {
             pthread_t ptid = pthread_self();
-            int answer, score = 0, len;
+            int len;
             for (int i = 0; i < question_bank.size(); i++)
             {
                 string text = question_bank[i].printQuestion();

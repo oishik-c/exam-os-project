@@ -140,7 +140,6 @@ void Teacher::setQuestions(int &clientSocket, string &filepath)
 {
     ifstream questionFile(filepath, ios::binary);
     textsendtype *textToSend = new textsendtype;
-    int bytesRead;
     while (!questionFile.eof())
     {
         questionFile.read(textToSend->buffer, sizeof(textToSend->buffer));
