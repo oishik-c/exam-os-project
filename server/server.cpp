@@ -14,6 +14,7 @@
 
 using namespace std;
 
+// Jishnur comment
 int serverSocket;
 struct sockaddr_in serverAddr;
 socklen_t serverAddrLen = sizeof(serverAddr);
