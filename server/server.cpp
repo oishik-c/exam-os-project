@@ -19,7 +19,7 @@ int serverSocket;
 struct sockaddr_in serverAddr;
 socklen_t serverAddrLen = sizeof(serverAddr);
 list<pthread_t> childThreads;
-vector<Question> question_bank;
+vector<Question> questionBank;
 
 int giveExam(int clientSocket)
 {
@@ -28,10 +28,10 @@ int giveExam(int clientSocket)
     pthread_t ptid = pthread_self();
     int answer, score = 0;
     textsendtype *textToSend = new textsendtype;
-    for (int i = 0; i < question_bank.size(); i++)
+    for (int i = 0; i < questionBank.size(); i++)
     {
-        strcpy(textToSend->buffer, question_bank[i].printQuestion().c_str());
-        textToSend->bytesRead = question_bank[i].printQuestion().length();
+        strcpy(textToSend->buffer, questionBank[i].printQuestion().c_str());
+        textToSend->bytesRead = questionBank[i].printQuestion().length();
         textToSend->buffer[textToSend->bytesRead] = '\0';
         if (send(clientSocket, textToSend, sizeof(*textToSend), 0) <= 0)
         {
@@ -44,7 +44,7 @@ int giveExam(int clientSocket)
             pthread_exit(&ptid);
         }
         cout << answer << endl;
-        if (answer == question_bank[i].getCorrectOption())
+        if (answer == questionBank[i].getCorrectOption())
         {
             score++;
         }
@@ -57,13 +57,13 @@ int giveExam(int clientSocket)
 
 vector<Question> &parseQuestionFile(const string &file_path)
 {
-    question_bank.clear();
+    questionBank.clear();
     ifstream file(file_path);
 
     if (!file.is_open())
     {
         cerr << "Failed to open the file: " << file_path << endl;
-        return question_bank;
+        return questionBank;
     }
 
     string line;
@@ -97,11 +97,11 @@ vector<Question> &parseQuestionFile(const string &file_path)
         }
 
         Question *question = new Question(text, options, correct);
-        question_bank.push_back(*question);
+        questionBank.push_back(*question);
     }
 
     file.close();
-    return question_bank;
+    return questionBank;
 }
 
 void *handleClient(void *arg)
@@ -148,8 +148,8 @@ void *handleClient(void *arg)
             }
             cout << "END" << endl;
             outFile.close();
-            question_bank.clear();
-            question_bank = parseQuestionFile(questionFilePath);
+            questionBank.clear();
+            questionBank = parseQuestionFile(questionFilePath);
             remove(questionFilePath);
             code = SET_Q_ACK;
             send(clientSocket, &code, sizeof(code), 0);
@@ -159,9 +159,9 @@ void *handleClient(void *arg)
         {
             pthread_t ptid = pthread_self();
             int len;
-            for (int i = 0; i < question_bank.size(); i++)
+            for (int i = 0; i < questionBank.size(); i++)
             {
-                string text = question_bank[i].printQuestion();
+                string text = questionBank[i].printQuestion();
                 len = text.length();
                 if (send(clientSocket, &len, sizeof(len), 0) <= 0)
                 {
@@ -263,7 +263,7 @@ int main()
             struct sockaddr_in *addr = (struct sockaddr_in *)ifa->ifa_addr;
             char ip[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &(addr->sin_addr), ip, INET_ADDRSTRLEN);
-            cout << ifa->ifa_name << ": " << ip << endl;
+            cout << "IP Address: " << ip << endl;
         }
     }
     freeifaddrs(ifaddr);
@@ -281,7 +281,7 @@ int main()
     int choice;
     while (true)
     {
-        cout << "Enter operation:\n1)Q SET\n2)Display question_bank\n3)Exit" << endl;
+        cout << "Enter operation:\n1)Q SET\n2)Display questionBank\n3)Exit" << endl;
         cin >> choice;
         switch (choice)
         {
@@ -291,12 +291,12 @@ int main()
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
             cout << "Enter path to text file: ";
             getline(cin, qfpath);
-            question_bank = parseQuestionFile(qfpath);
+            questionBank = parseQuestionFile(qfpath);
             break;
         }
         case 2:
         {
-            for (auto question : question_bank)
+            for (auto question : questionBank)
             {
                 string q = question.printQuestion();
                 cout << q << endl;
