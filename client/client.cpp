@@ -11,6 +11,7 @@ using namespace std;
 /*
 void exam(int clientSocket)
 {
+    ok
     int code = EXAM_START_REQUEST, score;
     send(clientSocket, &code, sizeof(code), 0);
     char buffer[1024];
