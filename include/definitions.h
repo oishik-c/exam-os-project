@@ -6,12 +6,10 @@
 #define registerFilePath "../include/register/registeredUsers.txt"
 #define questionFilePath "../question_bank/temp.txt"
 
-
 // Custom code for seeking the beginning of a file
 #define seek_comm_front                \
     communicationFile.seekg(ios::beg); \
     communicationFile.seekp(ios::beg);
-
 
 // Define unique signal codes for communication
 #define SHM_CREATED 10000000
@@ -34,7 +32,6 @@
 #define LGN_SCCSFL 005
 #define LGN_FAIL 006
 #define END_CONNECTION INT8_MIN
-
 
 // Menu options for user interaction
 #define register_menu "Enter your choice:\n1)Register\n2)Login\n3)Exit\n"

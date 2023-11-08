@@ -111,7 +111,6 @@ vector<Question> &parseQuestionFile(const string &file_path)
     return questionBank;
 }
 
-
 // Function to handle a client's requests
 void *handleClient(void *arg)
 {
@@ -164,7 +163,6 @@ void *handleClient(void *arg)
             outFile.close();
             questionBank.clear();
             questionBank = parseQuestionFile(questionFilePath);
-            remove(questionFilePath);
             code = SET_Q_ACK;
             send(clientSocket, &code, sizeof(code), 0);
             break;
@@ -175,7 +173,7 @@ void *handleClient(void *arg)
             int len;
             for (int i = 0; i < questionBank.size(); i++)
             {
-                
+
                 string text = questionBank[i].printQuestion();
                 len = text.length();
 
