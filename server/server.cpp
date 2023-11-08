@@ -13,23 +13,25 @@
 #include "newclasses.h"
 using namespace std;
 
+// Create a semaphore for file access synchronization
 sem_t *regFileSemaphore = sem_open("/semaphore-rf", O_CREAT, S_IRUSR | S_IWUSR, 0);
 
+// Declare server-related variables
 int serverSocket;
 struct sockaddr_in serverAddr;
 socklen_t serverAddrLen = sizeof(serverAddr);
 list<pthread_t> childThreads;
 vector<Question> questionBank;
 
+// Function to handle the examination for a client
 int giveExam(int clientSocket)
 {
-    /* Function to handle the examination of a client
-    input : clientSocket*/
     pthread_t ptid = pthread_self();
     int answer, score = 0;
     textsendtype *textToSend = new textsendtype;
     for (int i = 0; i < questionBank.size(); i++)
     {
+        // Prepare and send the question to the client
         strcpy(textToSend->buffer, questionBank[i].printQuestion().c_str());
         textToSend->bytesRead = questionBank[i].printQuestion().length();
         textToSend->buffer[textToSend->bytesRead] = '\0';
@@ -38,23 +40,27 @@ int giveExam(int clientSocket)
             perror("Transmission Error");
             pthread_exit(&ptid);
         }
+        // Receive the client's answer
         if (recv(clientSocket, &answer, sizeof(answer), 0) <= 0)
         {
             perror("Receiving Error");
             pthread_exit(&ptid);
         }
         cout << answer << endl;
+        // Check the answer and update the score
         if (answer == questionBank[i].getCorrectOption())
         {
             score++;
         }
     }
+    // Signal the end of the examination to the client
     strcpy(textToSend->buffer, "EOE");
     textToSend->buffer[3] = '\0';
     send(clientSocket, textToSend, sizeof(*textToSend), 0);
     return score;
 }
 
+// Function to parse the question file and store the question in question bank
 vector<Question> &parseQuestionFile(const string &file_path)
 {
     questionBank.clear();
@@ -96,6 +102,7 @@ vector<Question> &parseQuestionFile(const string &file_path)
             }
         }
 
+        // Create a Question object and add it to the question bank
         Question *question = new Question(text, options, correct);
         questionBank.push_back(*question);
     }
@@ -104,6 +111,8 @@ vector<Question> &parseQuestionFile(const string &file_path)
     return questionBank;
 }
 
+
+// Function to handle a client's requests
 void *handleClient(void *arg)
 {
     pthread_t ptid = pthread_self();
@@ -111,6 +120,7 @@ void *handleClient(void *arg)
     bool endflag = false;
     while (true)
     {
+        // Receive a request code from the client
         recv(clientSocket, &code, sizeof(code), 0);
         cout << code << endl;
 
@@ -123,6 +133,7 @@ void *handleClient(void *arg)
         }
         case EXAM_START_REQUEST:
         {
+            // Handle the examination request and send the score back to the client
             int score = giveExam(clientSocket);
             if (send(clientSocket, &score, sizeof(score), 0) <= 0)
             {
@@ -133,6 +144,7 @@ void *handleClient(void *arg)
         }
         case SET_Q_REQUEST:
         {
+            // Receive and store questions from the client
             ofstream outFile(questionFilePath, ios::binary);
             textsendtype *newtext = new textsendtype;
             while (true)
@@ -147,6 +159,8 @@ void *handleClient(void *arg)
                     break;
             }
             cout << "END" << endl;
+
+            // Update the question bank with new questions
             outFile.close();
             questionBank.clear();
             questionBank = parseQuestionFile(questionFilePath);
@@ -161,8 +175,11 @@ void *handleClient(void *arg)
             int len;
             for (int i = 0; i < questionBank.size(); i++)
             {
+                
                 string text = questionBank[i].printQuestion();
                 len = text.length();
+
+                // Send questions to the client
                 if (send(clientSocket, &len, sizeof(len), 0) <= 0)
                 {
                     perror("Transmission Error: ");
@@ -180,6 +197,7 @@ void *handleClient(void *arg)
         }
         case RGSTR_REQ:
         {
+            // Handle user registration request
             sem_post(regFileSemaphore);
             registerUser(clientSocket);
             sem_wait(regFileSemaphore);
@@ -187,6 +205,7 @@ void *handleClient(void *arg)
         }
         case LGN_REQ:
         {
+            // Handle user login request
             sem_post(regFileSemaphore);
             login(clientSocket);
             sem_wait(regFileSemaphore);
@@ -203,7 +222,7 @@ void *handleClient(void *arg)
 
 void *handleConnections(void *arg)
 {
-    // Handling connections
+    // Continuously handle incoming client connections
     while (true)
     {
         int clientSocket;
@@ -212,9 +231,12 @@ void *handleConnections(void *arg)
             perror("Accepting");
             exit(1);
         }
+        // Create a new thread to handle the client's requests
         pthread_t temp;
         pthread_create(&temp, NULL, handleClient, &clientSocket);
+        // Add the new thread to the list of child threads
         childThreads.insert(childThreads.begin(), temp);
+        // Detach the child thread to allow it to run independently
         pthread_detach(temp);
     }
     return NULL;
@@ -222,7 +244,7 @@ void *handleConnections(void *arg)
 
 int main()
 {
-    // Creating the server socket for connections
+    // Create the server socket for handling client connections
     serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSocket == -1)
     {
@@ -248,6 +270,7 @@ int main()
         exit(1);
     }
 
+    // Retrieve and display available IP addresses of the server
     struct ifaddrs *ifaddr, *ifa;
 
     if (getifaddrs(&ifaddr) == -1)
@@ -270,12 +293,15 @@ int main()
 
     cout << "Server listening on port 12345..." << endl;
 
+    // Create a thread to handle incoming client connections
     pthread_t clienthandler;
     if (pthread_create(&clienthandler, NULL, handleConnections, NULL) == -1)
     {
         perror("Client Handler Error:");
         exit(1);
     }
+
+    // Detach the client handler thread to allow it to run independently
     pthread_detach(clienthandler);
 
     int choice;
@@ -290,12 +316,14 @@ int main()
             string qfpath;
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
             cout << "Enter path to text file: ";
+            // Read the path to the question file and update the question bank
             getline(cin, qfpath);
             questionBank = parseQuestionFile(qfpath);
             break;
         }
         case 2:
         {
+            // Display the questions in the question bank
             for (auto question : questionBank)
             {
                 string q = question.printQuestion();
@@ -305,6 +333,7 @@ int main()
         }
         case 3:
         {
+            // Close the server socket and exit the program
             close(serverSocket);
             exit(0);
         }
@@ -313,6 +342,7 @@ int main()
         }
     }
 
+    // Close the server socket
     close(serverSocket);
     return 0;
 }

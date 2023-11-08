@@ -1,19 +1,26 @@
+// Define directory paths for client and communication data
 #define clientDirectory "/home/oishik/OS Project/clients/"
 #define communicationDirectory "/home/oishik/OS Project/communication/"
+
+// Define file paths for user registration and temporary question storage
 #define registerFilePath "../include/register/registeredUsers.txt"
 #define questionFilePath "../question_bank/temp.txt"
 
+
+// Custom code for seeking the beginning of a file
 #define seek_comm_front                \
     communicationFile.seekg(ios::beg); \
     communicationFile.seekp(ios::beg);
 
+
+// Define unique signal codes for communication
 #define SHM_CREATED 10000000
 #define NEXT_QUESTION_REQUEST 11000000
 #define QUESTION_SENT 7000000
 #define EVALUATE_ANSWER 800000
 #define QUESTION_END 9000000
 
-// Signals for sockets
+// Signals used for socket communication
 #define NO_SGNL -1
 #define EXAM_START_REQUEST 101
 #define SET_Q_REQUEST 201
@@ -28,6 +35,8 @@
 #define LGN_FAIL 006
 #define END_CONNECTION INT8_MIN
 
+
+// Menu options for user interaction
 #define register_menu "Enter your choice:\n1)Register\n2)Login\n3)Exit\n"
 #define student_menu "Enter your choice:\n1)Start Exam\n2)Exit\n"
 #define teacher_menu "Enter your choice:\n1)Set Questions\n2)See Questions\n3)Exit\n"
