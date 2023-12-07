@@ -57,8 +57,8 @@ int giveExam(int &clientSocket, string &username)
         auto start = chrono::high_resolution_clock::now();
 
         // Prepare and send the question to the client
-        strcpy(textToSend->buffer, questionBank[questionset[i]].printQuestion().c_str());
-        textToSend->bytesRead = questionBank[questionset[i]].printQuestion().length();
+        strcpy(textToSend->buffer, questionBank[questionset[i]].printQuestion(i + 1).c_str());
+        textToSend->bytesRead = questionBank[questionset[i]].printQuestion(i + 1).length();
         textToSend->buffer[textToSend->bytesRead] = '\0';
         if (send(clientSocket, textToSend, sizeof(*textToSend), 0) <= 0)
         {
@@ -184,7 +184,8 @@ set<string> detectPotentialCheating()
     int numQuestions = timingmatrix[0].second.size();
 
     // Vector to store average for each question
-    vector<double> questionAvg(numQuestions, 0.0);
+    vector<long double> questionAvg(numQuestions, 0.0);
+    vector<long double> questionStD(numQuestions, 0.0);
 
     // Calculate sum of responses for each question
     for (const auto &student : timingmatrix)
@@ -207,7 +208,7 @@ set<string> detectPotentialCheating()
         for (int i = 0; i < numQuestions; ++i)
         {
             // Check if response deviates significantly from the average
-            if ((questionAvg[i] - student.second[i]) > 3000)
+            if (abs(questionAvg[i] - student.second[i]) > 2000)
             {
                 potentialCheaters.insert(student.first);
             }
@@ -314,7 +315,7 @@ void *handleClient(void *arg)
             for (int i = 0; i < questionBank.size(); i++)
             {
 
-                string text = questionBank[i].printQuestion();
+                string text = questionBank[i].printQuestion(i + 1);
                 len = text.length();
 
                 strcpy(current_question->buffer, text.c_str());
@@ -337,6 +338,23 @@ void *handleClient(void *arg)
             send(clientSocket, current_question, sizeof(*current_question), 0);
             break;
         }
+        case REQ_STATS:
+        {
+            set<string> cheaters = detectPotentialCheating();
+            for (auto i : cheaters)
+                cout << i << endl;
+            sendStringSet(clientSocket, cheaters);
+            printTimingMatrixInputs();
+            break;
+        }
+        case REQ_LDRBRD:
+        {
+            string leaderboardText = generateLeaderboard();
+            textsendtype *leaderboardToSend = new textsendtype;
+            strcpy(leaderboardToSend->buffer, leaderboardText.c_str());
+            send(clientSocket, leaderboardToSend, sizeof(*leaderboardToSend), 0);
+            break;
+        }
         case RGSTR_REQ:
         {
             // Handle user registration request
@@ -351,13 +369,6 @@ void *handleClient(void *arg)
             sem_post(regFileSemaphore);
             username = login(clientSocket);
             sem_wait(regFileSemaphore);
-            break;
-        }
-        case REQ_STATS:
-        {
-            set<string> cheaters = detectPotentialCheating();
-            sendStringSet(clientSocket, cheaters);
-            printTimingMatrixInputs();
             break;
         }
         }
@@ -472,18 +483,23 @@ int main()
         }
         case 2:
         {
+            int i = 0;
             // Display the questions in the question bank
             for (auto question : questionBank)
             {
-                string q = question.printQuestion();
+                string q = question.printQuestion(i + 1);
+                i++;
                 cout << q << endl;
             }
             break;
         }
 
         case 3:
-            generateLeaderboard();
+        {
+            string text = generateLeaderboard();
+            cout << text;
             break;
+        }
         case 4:
         {
             // Close the server socket and exit the program

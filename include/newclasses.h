@@ -63,7 +63,7 @@ public:
     int getCorrectOption();
 
     // Method to create a formatted string of the question
-    string printQuestion();
+    string printQuestion(int i);
 };
 
 // Base class to represent a user
@@ -85,6 +85,9 @@ public:
 
     // Virtual method to get the user type (subclasses will override this)
     virtual string getUserType();
+
+    // Function to check leaderboard
+    void checkLeaderboard(int &clientSocket);
 };
 
 // Derived class representing a Student, inheriting from User

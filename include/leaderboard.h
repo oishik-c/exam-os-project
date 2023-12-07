@@ -65,6 +65,7 @@ vector<UserLeader> readUserLeaderData()
 
     return UserLeaders;
 }
+
 vector<UserLeader> UserLeaders = readUserLeaderData();
 // Function to update marks and time for a specific UserLeader or add a new UserLeader
 void updateMarksAndTime(const string &UserLeadername, int newMarks, int timeTaken)
@@ -110,6 +111,7 @@ void writeUserLeaderData()
         cerr << "Unable to open file for writing: " << filename << endl;
     }
 }
+
 bool compareLeaderboardEntries(const LeaderboardEntry &a, const LeaderboardEntry &b)
 {
     if (a.maxMarks != b.maxMarks)
@@ -121,8 +123,9 @@ bool compareLeaderboardEntries(const LeaderboardEntry &a, const LeaderboardEntry
         return a.timeForMaxMarks < b.timeForMaxMarks;
     }
 }
+
 // Function to generate leaderboard based on max marks and time
-void generateLeaderboard()
+string generateLeaderboard()
 {
     // Create a vector of LeaderboardEntry for sorting
     vector<LeaderboardEntry> leaderboardData;
@@ -147,10 +150,11 @@ void generateLeaderboard()
     sort(leaderboardData.begin(), leaderboardData.end(), compareLeaderboardEntries);
 
     // Display the sorted leaderboard
-    cout << "\nLeaderboard:\n";
+    string leaderboard = "\nLeaderboard:\n";
     for (size_t i = 0; i < leaderboardData.size(); ++i)
     {
         const auto &entry = leaderboardData[i];
-        cout << i + 1 << ". " << entry.UserLeadername << ": " << entry.maxMarks << " | " << entry.timeForMaxMarks << "s\n";
+        leaderboard += to_string(i + 1) + ". " + entry.UserLeadername + ": " + to_string(entry.maxMarks) + " | " + to_string(entry.timeForMaxMarks) + "s\n";
     }
+    return leaderboard;
 }

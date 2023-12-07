@@ -68,9 +68,9 @@ int Question::getCorrectOption()
 }
 
 // Function to print a question
-string Question::printQuestion()
+string Question::printQuestion(int i)
 {
-    return this->text + "\n1)" + this->options[0] + "\n2)" + this->options[1] + "\n3)" + this->options[2] + "\n4)" + this->options[3];
+    return to_string(i) + ") " + this->text + "\n1)" + this->options[0] + "\n2)" + this->options[1] + "\n3)" + this->options[2] + "\n4)" + this->options[3];
 }
 
 // Implementation of the User class using constructor
@@ -89,6 +89,15 @@ string User::getPassword()
 string User::getUserType()
 {
     return "User";
+}
+
+void User::checkLeaderboard(int &clientSocket)
+{
+    int code = REQ_LDRBRD;
+    send(clientSocket, &code, sizeof(code), 0);
+    textsendtype *leaderboardSent = new textsendtype;
+    recv(clientSocket, leaderboardSent, sizeof(*leaderboardSent), 0);
+    std::cout << leaderboardSent->buffer << endl;
 }
 
 // Implementation of the Student class using constructor
@@ -479,6 +488,12 @@ int Client::requests()
             }
             case 2:
             {
+                // Request for leaderboard
+                student->checkLeaderboard(this->clientSocket);
+                break;
+            }
+            case 3:
+            {
                 // Send an end connection request to the server and close the client socket to exit.
                 endconnection(this->clientSocket);
                 close(this->clientSocket);
@@ -557,6 +572,12 @@ int Client::requests()
             }
             case 3:
             {
+                // Request for leaderboard
+                teacher->checkLeaderboard(this->clientSocket);
+                break;
+            }
+            case 4:
+            {
                 // Request for the student statistics
                 int code = REQ_STATS;
                 bool stringEnd = false;
@@ -578,7 +599,7 @@ int Client::requests()
 
                 break;
             }
-            case 4:
+            case 5:
             {
                 // Send an end connection request to the server and close the client socket to exit.
                 endconnection(this->clientSocket);
