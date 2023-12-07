@@ -12,7 +12,10 @@
 #include "definitions.h"
 #include "newclasses.h"
 #include "leaderboard.h"
+#include <chrono>
 using namespace std;
+
+vector<pair<string, vector<double>>> timingmatrix; // matrix to store the timing
 
 // Create a semaphore for file access synchronization
 sem_t *regFileSemaphore = sem_open("/semaphore-rf", O_CREAT, S_IRUSR | S_IWUSR, 0);
@@ -24,17 +27,38 @@ socklen_t serverAddrLen = sizeof(serverAddr);
 list<pthread_t> childThreads;
 vector<Question> questionBank;
 
+vector<int> randomshuffling() // question shuffling code
+{
+    srand(unsigned(time(0)));
+    vector<int> questionset;
+
+    // set some values:
+    for (int j = 0; j < questionBank.size(); ++j)
+
+        questionset.push_back(j);
+
+    // using built-in random generator
+    random_shuffle(questionset.begin(), questionset.end());
+    return questionset;
+}
+
 // Function to handle the examination for a client
-int giveExam(int clientSocket)
+int giveExam(int &clientSocket, string &username)
 {
     pthread_t ptid = pthread_self();
     int answer, score = 0;
     textsendtype *textToSend = new textsendtype;
-    for (int i = 0; i < questionBank.size(); i++)
+    std::vector<double> timingsForStudent(questionBank.size(), 0); // Initialize timing matrix row for this student
+    vector<int> questionset = randomshuffling();
+
+    for (int i = 0; i < questionset.size(); i++)
     {
+        // Reset the timer for each question
+        auto start = chrono::high_resolution_clock::now();
+
         // Prepare and send the question to the client
-        strcpy(textToSend->buffer, questionBank[i].printQuestion().c_str());
-        textToSend->bytesRead = questionBank[i].printQuestion().length();
+        strcpy(textToSend->buffer, questionBank[questionset[i]].printQuestion().c_str());
+        textToSend->bytesRead = questionBank[questionset[i]].printQuestion().length();
         textToSend->buffer[textToSend->bytesRead] = '\0';
         if (send(clientSocket, textToSend, sizeof(*textToSend), 0) <= 0)
         {
@@ -47,9 +71,16 @@ int giveExam(int clientSocket)
             perror("Receiving Error");
             pthread_exit(&ptid);
         }
-        cout << answer << endl;
+
+        // Stop the timer and calculate the elapsed time
+        auto stop = chrono::high_resolution_clock::now();
+        auto duration = chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+
+        // Store timing information in the vector
+        timingsForStudent[questionset[i]] = duration.count();
+
         // Check the answer and update the score
-        if (answer == questionBank[i].getCorrectOption())
+        if (answer == questionBank[questionset[i]].getCorrectOption())
         {
             score++;
         }
@@ -58,6 +89,10 @@ int giveExam(int clientSocket)
     strcpy(textToSend->buffer, "EOE");
     textToSend->buffer[3] = '\0';
     send(clientSocket, textToSend, sizeof(*textToSend), 0);
+
+    // Update the timings matrix with the timings for this student
+    timingmatrix.push_back(make_pair(username, timingsForStudent));
+
     return score;
 }
 
@@ -112,6 +147,102 @@ vector<Question> &parseQuestionFile(const string &file_path)
     return questionBank;
 }
 
+// Function to send a set of strings to the client
+void sendStringSet(int clientSocket, const std::set<std::string> &stringSet)
+{
+    int code;
+    textsendtype *textToSend = new textsendtype;
+    for (const auto &str : stringSet)
+    {
+        // Assuming the strings are null-terminated, you can use str.c_str() to get the C-string.
+        strcpy(textToSend->buffer, str.c_str());
+        textToSend->bytesRead = str.length();
+        // Send the string data
+        send(clientSocket, textToSend, sizeof(*textToSend), 0);
+        recv(clientSocket, &code, sizeof(code), 0);
+    }
+
+    // Signal the end of the strings by sending a special marker (e.g., an empty string)
+    strcpy(textToSend->buffer, "EOS");
+    textToSend->bytesRead = 3;
+    send(clientSocket, textToSend, sizeof(*textToSend), 0);
+    recv(clientSocket, &code, sizeof(code), 0);
+}
+
+// Function to detect potential cheating
+set<string> detectPotentialCheating()
+{
+    set<string> potentialCheaters;
+
+    if (timingmatrix.empty())
+    {
+        cout << "No data available.\n";
+        return potentialCheaters;
+    }
+
+    // Calculate total number of questions
+    int numQuestions = timingmatrix[0].second.size();
+
+    // Vector to store average for each question
+    vector<double> questionAvg(numQuestions, 0.0);
+
+    // Calculate sum of responses for each question
+    for (const auto &student : timingmatrix)
+    {
+        for (int i = 0; i < numQuestions; ++i)
+        {
+            questionAvg[i] += student.second[i];
+        }
+    }
+
+    // Calculate average for each question
+    for (int i = 0; i < numQuestions; ++i)
+    {
+        questionAvg[i] /= timingmatrix.size();
+    }
+
+    // Detect potential cheating
+    for (const auto &student : timingmatrix)
+    {
+        for (int i = 0; i < numQuestions; ++i)
+        {
+            // Check if response deviates significantly from the average
+            if ((questionAvg[i] - student.second[i]) > 3000)
+            {
+                potentialCheaters.insert(student.first);
+            }
+            // if (student.second[i]==questionAvg[i]) {
+            //     potentialCheaters.insert(student.first);
+            // }
+        }
+    }
+
+    return potentialCheaters;
+}
+
+// Function to print the Timing Matrix Inputs
+void printTimingMatrixInputs()
+{
+    if (timingmatrix.empty())
+    {
+        cout << "No data available.\n";
+        return;
+    }
+
+    cout << "Student Response Timing Data:\n";
+
+    for (const auto &student : timingmatrix)
+    {
+        cout << "Student: " << student.first << "\n";
+        cout << "Response Time: ";
+        for (const auto &response : student.second)
+        {
+            cout << response << " ";
+        }
+        cout << "\n\n";
+    }
+}
+
 // Function to handle a client's requests
 void *handleClient(void *arg)
 {
@@ -136,7 +267,7 @@ void *handleClient(void *arg)
         {
             // Handle the examination request and send the score back to the client
             auto start_time = chrono::high_resolution_clock::now();
-            int score = giveExam(clientSocket);
+            int score = giveExam(clientSocket, username);
             auto end_time = chrono::high_resolution_clock::now();
             auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
 
@@ -220,6 +351,13 @@ void *handleClient(void *arg)
             sem_post(regFileSemaphore);
             username = login(clientSocket);
             sem_wait(regFileSemaphore);
+            break;
+        }
+        case REQ_STATS:
+        {
+            set<string> cheaters = detectPotentialCheating();
+            sendStringSet(clientSocket, cheaters);
+            printTimingMatrixInputs();
             break;
         }
         }

@@ -557,6 +557,29 @@ int Client::requests()
             }
             case 3:
             {
+                // Request for the student statistics
+                int code = REQ_STATS;
+                bool stringEnd = false;
+                textsendtype *textSent = new textsendtype;
+                send(this->clientSocket, &code, sizeof(code), 0);
+                // Assuming the server sends information about potential cheaters as strings
+                // Receive and print the strings until the end marker is received
+                cout << "We are searching for students for any cheating done in the test: " << endl;
+
+                while (!stringEnd)
+                {
+                    recv(clientSocket, textSent, sizeof(*textSent), 0);
+                    if (strcmp(textSent->buffer, "EOS") == 0)
+                        stringEnd = true;
+                    else
+                        cout << textSent->buffer << endl;
+                    send(clientSocket, &code, sizeof(code), 0);
+                }
+
+                break;
+            }
+            case 4:
+            {
                 // Send an end connection request to the server and close the client socket to exit.
                 endconnection(this->clientSocket);
                 close(this->clientSocket);

@@ -8,3 +8,4 @@ questions.txt
 .vscode/*
 build/*
 question_bank/*
+ser.cpp

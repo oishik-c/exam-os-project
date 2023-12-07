@@ -33,9 +33,10 @@
 #define LGN_REQ 004
 #define LGN_SCCSFL 005
 #define LGN_FAIL 006
+#define REQ_STATS 301
 #define END_CONNECTION INT8_MIN
 
 // Menu options for user interaction
 #define register_menu "Enter your choice:\n1)Register\n2)Login\n3)Exit\n"
 #define student_menu "Enter your choice:\n1)Start Exam\n2)Exit\n"
-#define teacher_menu "Enter your choice:\n1)Set Questions\n2)See Questions\n3)Exit\n"
+#define teacher_menu "Enter your choice:\n1)Set Questions\n2)See Questions\n3)See Student Statistic\n4)Exit\n"
