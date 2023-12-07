@@ -4,7 +4,7 @@
 
 // Define file paths for user registration and temporary question storage
 #define registerFilePath "../include/register/registeredUsers.txt"
-#define questionFilePath "../question_bank/temp.txt"
+#define questionFilePath "../temp.txt"
 #define lederboardFilePath "../include/register/leaderboard.txt"
 
 // Custom code for seeking the beginning of a file
@@ -26,6 +26,7 @@
 #define SET_Q_ACK 202
 #define Q_END_SIG 203
 #define SEE_Q_REQUEST 204
+#define Q_RECV_SCCS 205
 #define USER_UNQ 001
 #define RGSTR_REQ 002
 #define RGSTR_SCCSFL 003

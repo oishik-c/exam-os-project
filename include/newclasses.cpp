@@ -1,5 +1,7 @@
 #include "newclasses.h"
 
+int key = 13;
+
 // Function to encrypt a string using a Caesar cipher with a specified shift value
 string encryptString(const string &input, int shift)
 {
@@ -123,18 +125,18 @@ void Student::startExam(int clientSocket)
             break;
         }
         system("clear"); // Assuming a Unix-based system to clear the terminal
-        cout << textToRead->buffer << endl
-             << "A: ";
-        cin >> answer;
+        std::cout << textToRead->buffer << endl
+                  << "A: ";
+        std::cin >> answer;
         send(clientSocket, &answer, sizeof(answer), 0);
     }
     if (examend)
     {
-        cout << "Exam has ended!" << endl;
+        std::cout << "Exam has ended!" << endl;
     }
     usleep(5000); // Pause for a short time to allow the server to process the results
     recv(clientSocket, &score, sizeof(score), 0);
-    cout << "The score obtained: " << score << endl;
+    std::cout << "The score obtained: " << score << endl;
 }
 
 // Implementation of the Teacher class using constructor
@@ -161,7 +163,7 @@ void Teacher::setQuestions(int &clientSocket, string &filepath)
         textToSend->bytesRead = questionFile.gcount();
         textToSend->code = SET_Q_REQUEST;
         send(clientSocket, textToSend, sizeof(*textToSend), 0);
-        cout << textToSend->buffer << endl;
+        std::cout << textToSend->buffer << endl;
         sleep(1);
     }
     textToSend->code = Q_END_SIG;
@@ -197,7 +199,7 @@ bool isUsernameUnique(const string &username)
 // Function to register a user
 string registerUser(int &clientSocket)
 {
-    int code, key;
+    int code;
     string uname, pword, uid, utype, hashedPassword;
     userinfosendtype *newUserInfo = new userinfosendtype;
     while (true)
@@ -224,7 +226,6 @@ string registerUser(int &clientSocket)
     pword = newUserInfo->password;
     uid = newUserInfo->id;
     utype = newUserInfo->type;
-    key = 13;
     hashedPassword = encryptString(pword, key);
     ofstream registerFileWriter(registerFilePath, ios::app);
     if (registerFileWriter.is_open())
@@ -239,7 +240,7 @@ string registerUser(int &clientSocket)
         perror("FILENOTOPEN");
         code = NO_SGNL; // Registration failed due to a file error
     }
-    cout << hashedPassword << uname << endl;
+    std::cout << hashedPassword << uname << endl;
     send(clientSocket, &code, sizeof(code), 0);
     return uname;
 }
@@ -251,19 +252,19 @@ User *registerUserHelper(int &clientSocket, string &userType)
     userinfosendtype *newUserInfo = new userinfosendtype;
     while (true)
     {
-        cout << "Enter your username: ";
-        cin >> newUserInfo->username;
+        std::cout << "Enter your username: ";
+        std::cin >> newUserInfo->username;
         send(clientSocket, newUserInfo, sizeof(*newUserInfo), 0);
         recv(clientSocket, &code, sizeof(code), 0);
         if (code != USER_UNQ)
-            cout << "Username already exists. Please choose a different username." << endl;
+            std::cout << "Username already exists. Please choose a different username." << endl;
         else
             break; // Username is unique; continue with the registration process
     }
-    cout << "Enter your password: ";
-    cin >> newUserInfo->password;
-    cout << "Enter your id: ";
-    cin >> newUserInfo->id;
+    std::cout << "Enter your password: ";
+    std::cin >> newUserInfo->password;
+    std::cout << "Enter your id: ";
+    std::cin >> newUserInfo->id;
     strcpy(newUserInfo->type, userType.c_str());
 
     send(clientSocket, newUserInfo, sizeof(*newUserInfo), 0);
@@ -276,12 +277,12 @@ User *registerUserHelper(int &clientSocket, string &userType)
             user = new Student(newUserInfo->username, newUserInfo->password, newUserInfo->id);
         else
             user = new Teacher(newUserInfo->username, newUserInfo->password, newUserInfo->id);
-        cout << "Welcome, " << newUserInfo->username << "!!\n";
+        std::cout << "Welcome, " << newUserInfo->username << "!!\n";
         return user; // User registration is successful
     }
     else
     {
-        cout << "Registration Failed! Server Error!" << endl;
+        std::cout << "Registration Failed! Server Error!" << endl;
         return NULL; // User registration failed due to a server error
     }
 }
@@ -292,6 +293,8 @@ string login(int &clientSocket)
     int code;
     userinfosendtype *newUserInfo = new userinfosendtype;
     recv(clientSocket, newUserInfo, sizeof(*newUserInfo), 0);
+    std::cout << newUserInfo->username << newUserInfo->password << endl;
+    string uname = newUserInfo->username;
 
     ifstream registerFileReader(registerFilePath);
     if (registerFileReader.is_open())
@@ -313,19 +316,16 @@ string login(int &clientSocket)
                     if (pos3 != string::npos)
                     {
                         string storedUserType = userTypeId.substr(0, pos3);
-                        string storedIdSalt = userTypeId.substr(pos3 + 1);
-                        size_t pos4 = storedIdSalt.find('|');
-                        if (pos4 != string::npos)
+                        string storedId = userTypeId.substr(pos3 + 1);
+                        string generatedPassword = encryptString(newUserInfo->password, key);
+                        // Compare the login credentials with stored credentials.
+                        if (uname == storedUsername && generatedPassword == storedPassword)
                         {
-                            string storedId = storedIdSalt.substr(0, pos4);
-                            int key = 13;
-                            string generatedPassword = encryptString(newUserInfo->password, key);
-                            // Compare the login credentials with stored credentials.
-                            if (newUserInfo->username == storedUsername && generatedPassword == storedPassword && newUserInfo->type == storedUserType)
-                                code = LGN_SCCSFL; // Login successful
-                            else
-                                code = LGN_FAIL; // Login failed due to incorrect credentials
+                            code = LGN_SCCSFL; // Login successful
+                            break;
                         }
+                        else
+                            code = LGN_FAIL; // Login failed due to incorrect credentials
                     }
                 }
             }
@@ -347,24 +347,23 @@ User *loginHelper(int &clientSocket, string &usertype)
     userinfosendtype *newUserInfo = new userinfosendtype;
 
     // Prompt the user to enter their username and password.
-    cout << "Enter your username: ";
-    cin >> newUserInfo->username;
-    cout << "Enter your password: ";
-    cin >> newUserInfo->password;
+    std::cout << "Enter your username: ";
+    std::cin >> newUserInfo->username;
+    std::cout << "Enter your password: ";
+    std::cin >> newUserInfo->password;
     // Set the user type (Student or Teacher) for the login request.
     strcpy(newUserInfo->type, usertype.c_str());
     // Send the user's login information to the server.
     send(clientSocket, newUserInfo, sizeof(*newUserInfo), 0);
     // Receive the login result code from the server.
     recv(clientSocket, &code, sizeof(code), 0);
-
     // Handle different cases based on the received code.
     switch (code)
     {
     case LGN_SCCSFL:
     {
         User *user;
-        cout << "Welcome, " << newUserInfo->username << "!!" << endl;
+        std::cout << "Welcome, " << newUserInfo->username << "!!" << endl;
         // Create a User object based on the user type (Student or Teacher).
         if (strcmp(newUserInfo->type, "S") == 0)
             user = new Student(newUserInfo->username, newUserInfo->password, newUserInfo->id);
@@ -398,8 +397,8 @@ Client::Client()
     }
 
     string ipAddr;
-    cout << "Enter the IP address of server: ";
-    cin >> ipAddr;
+    std::cout << "Enter the IP address of server: ";
+    std::cin >> ipAddr;
 
     // Initialize the server's address structure.
     this->serverAddr.sin_addr.s_addr = inet_addr(ipAddr.c_str());
@@ -414,13 +413,13 @@ Client::Client()
         exit(1);
     }
 
-    cout << "Server Connected Successfully!!\n"
-         << endl;
+    std::cout << "Server Connected Successfully!!\n"
+              << endl;
 
     int choice;
     system("clear"); // Clear the terminal screen
-    cout << register_menu << "Choice: ";
-    cin >> choice;
+    std::cout << register_menu << "Choice: ";
+    std::cin >> choice;
     switch (choice)
     {
     case 1:
@@ -429,8 +428,8 @@ Client::Client()
         int code = RGSTR_REQ;
         send(clientSocket, &code, sizeof(code), 0);
         string userType;
-        cout << "Are you a student or a teacher?(S for Student, T for Teacher) ";
-        cin >> userType;
+        std::cout << "Are you a student or a teacher?(S for Student, T for Teacher) ";
+        std::cin >> userType;
         // Call the registerUserHelper function to assist in the registration process.
         this->user = registerUserHelper(this->clientSocket, userType);
         break;
@@ -441,15 +440,15 @@ Client::Client()
         int code = LGN_REQ;
         send(clientSocket, &code, sizeof(code), 0);
         string userType;
-        cout << "Are you a student or a teacher?(S for Student, T for Teacher) ";
-        cin >> userType;
+        std::cout << "Are you a student or a teacher?(S for Student, T for Teacher) ";
+        std::cin >> userType;
         // Call the loginHelper function to assist in the login process.
         this->user = loginHelper(this->clientSocket, userType);
         break;
     }
     case 3:
     {
-        cout << "Exiting!!" << endl;
+        std::cout << "Exiting!!" << endl;
 
         // Send an end connection request to the server and close the client socket.
         endconnection(this->clientSocket);
@@ -468,8 +467,8 @@ int Client::requests()
         int choice;
         while (true)
         {
-            cout << student_menu << "Choice: ";
-            cin >> choice;
+            std::cout << student_menu << "Choice: ";
+            std::cin >> choice;
             switch (choice)
             {
             case 1:
@@ -494,8 +493,8 @@ int Client::requests()
         int choice;
         while (true)
         {
-            cout << teacher_menu << "Choice: ";
-            cin >> choice;
+            std::cout << teacher_menu << "Choice: ";
+            std::cin >> choice;
             switch (choice)
             {
             case 1:
@@ -504,19 +503,19 @@ int Client::requests()
                 int code = SET_Q_REQUEST;
                 send(this->clientSocket, &code, sizeof(code), 0);
                 string filePath;
-                cout << "Enter path to text file: ";
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                getline(cin, filePath);
+                std::cout << "Enter path to text file: ";
+                std::cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                getline(std::cin, filePath);
 
                 // Call the teacher's function to set questions using the provided text file.
                 teacher->setQuestions(this->clientSocket, filePath);
-                cout << "DONE" << endl;
+                std::cout << "DONE" << endl;
                 recv(this->clientSocket, &code, sizeof(code), 0);
 
                 // Check if the questions were set successfully and provide feedback.
                 if (code == SET_Q_ACK)
                 {
-                    cout << "Questions set successfully!!" << endl;
+                    std::cout << "Questions set successfully!!" << endl;
                 }
                 else
                 {
@@ -529,34 +528,30 @@ int Client::requests()
                 // Send a request to see questions and receive and display questions from the server.
                 int code = SEE_Q_REQUEST;
                 send(this->clientSocket, &code, sizeof(code), 0);
-                char buffer[1024];
-                int len;
-                int bytesRead;
+                textsendtype *question = new textsendtype;
                 bool questend = false;
                 while (true)
                 {
                     // Receive and display questions until the "EOE" (End of Exam) signal is received.
-                    if (recv(clientSocket, &len, sizeof(len), 0) <= 0)
-                    {
-                        perror("Length Receive Error: ");
-                        exit(1);
-                    }
-                    if ((bytesRead = recv(clientSocket, buffer, len, 0)) <= 0)
+                    if (recv(clientSocket, question, sizeof(*question), 0) <= 0)
                     {
                         perror("Question Receive Error: ");
                         exit(1);
                     }
-                    buffer[bytesRead] = '\0';
-                    if (strcmp(buffer, "EOE") == 0)
+                    question->buffer[question->bytesRead] = '\0';
+                    if (strcmp(question->buffer, "EOE") == 0)
                     {
                         questend = true;
                         break;
                     }
-                    cout << buffer << endl;
+                    std::cout << question->buffer << endl;
+
+                    code = Q_RECV_SCCS;
+                    send(clientSocket, &code, sizeof(code), 0);
                 }
                 if (questend)
                 {
-                    cout << "No more questions!" << endl;
+                    std::cout << "No more questions!" << endl;
                 }
                 break;
             }

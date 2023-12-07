@@ -179,26 +179,31 @@ void *handleClient(void *arg)
         {
             pthread_t ptid = pthread_self();
             int len;
+            textsendtype *current_question = new textsendtype;
             for (int i = 0; i < questionBank.size(); i++)
             {
 
                 string text = questionBank[i].printQuestion();
                 len = text.length();
 
+                strcpy(current_question->buffer, text.c_str());
+                current_question->bytesRead = len;
+
                 // Send questions to the client
-                if (send(clientSocket, &len, sizeof(len), 0) <= 0)
+                if (send(clientSocket, current_question, sizeof(*current_question), 0) <= 0)
                 {
                     perror("Transmission Error: ");
                     pthread_exit(&ptid);
                 }
-                if (send(clientSocket, text.c_str(), text.length(), 0) <= 0)
+                recv(clientSocket, &code, sizeof(code), 0);
+                if (code != Q_RECV_SCCS)
                 {
-                    perror("Transmission Error: ");
-                    pthread_exit(&ptid);
+                    perror("Transmission Error");
                 }
             }
-            send(clientSocket, &len, sizeof(len), 0);
-            send(clientSocket, "EOE", 4, 0);
+            strcpy(current_question->buffer, "EOE");
+            current_question->bytesRead = 3;
+            send(clientSocket, current_question, sizeof(*current_question), 0);
             break;
         }
         case RGSTR_REQ:

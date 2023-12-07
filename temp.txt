@@ -1,0 +1,5 @@
+1. What is the capital of Canada?|Ottawa|Toronto|Vancouver|Montreal|1
+2. Which planet is known as the "Red Planet"?|Venus|Mars|Jupiter|Saturn|2
+3. Who is the author of "To Kill a Mockingbird"?|F. Scott Fitzgerald|J.K. Rowling|Harper Lee|Ernest Hemingway|3
+4. What is the largest ocean on Earth?|Atlantic Ocean|Indian Ocean|Southern Ocean|Pacific Ocean|4
+5. In which year did the Berlin Wall fall?|1985|1989|1991|1995|2
