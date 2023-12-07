@@ -1,10 +1,11 @@
 // Define directory paths for client and communication data
-#define clientDirectory "/home/oishik/OS Project/clients/"
-#define communicationDirectory "/home/oishik/OS Project/communication/"
+#define clientDirectory "/home/jraj/OS Project/clients/"
+#define communicationDirectory "/home/jraj/OS Project/communication/"
 
 // Define file paths for user registration and temporary question storage
 #define registerFilePath "../include/register/registeredUsers.txt"
 #define questionFilePath "../question_bank/temp.txt"
+#define lederboardFilePath "../include/register/leaderboard.txt"
 
 // Custom code for seeking the beginning of a file
 #define seek_comm_front                \

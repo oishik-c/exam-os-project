@@ -195,7 +195,7 @@ bool isUsernameUnique(const string &username)
 }
 
 // Function to register a user
-void registerUser(int &clientSocket)
+string registerUser(int &clientSocket)
 {
     int code, key;
     string uname, pword, uid, utype, hashedPassword;
@@ -241,6 +241,7 @@ void registerUser(int &clientSocket)
     }
     cout << hashedPassword << uname << endl;
     send(clientSocket, &code, sizeof(code), 0);
+    return uname;
 }
 
 // Function to register a user with helper functions
@@ -286,7 +287,7 @@ User *registerUserHelper(int &clientSocket, string &userType)
 }
 
 // Function to handle user login
-void login(int &clientSocket)
+string login(int &clientSocket)
 {
     int code;
     userinfosendtype *newUserInfo = new userinfosendtype;
@@ -336,6 +337,7 @@ void login(int &clientSocket)
 
     // Send the result code back to the client.
     send(clientSocket, &code, sizeof(code), 0);
+    return newUserInfo->username;
 }
 
 // This function assists in the login process by interacting with the user.
