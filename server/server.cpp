@@ -11,6 +11,7 @@
 #include <pthread.h>
 #include "definitions.h"
 #include "newclasses.h"
+#include "leaderboard.h"
 using namespace std;
 
 // Create a semaphore for file access synchronization
@@ -114,6 +115,7 @@ vector<Question> &parseQuestionFile(const string &file_path)
 // Function to handle a client's requests
 void *handleClient(void *arg)
 {
+    string username;
     pthread_t ptid = pthread_self();
     int clientSocket = *((int *)arg), code;
     bool endflag = false;
@@ -133,7 +135,13 @@ void *handleClient(void *arg)
         case EXAM_START_REQUEST:
         {
             // Handle the examination request and send the score back to the client
+            auto start_time = chrono::high_resolution_clock::now();
             int score = giveExam(clientSocket);
+            auto end_time = chrono::high_resolution_clock::now();
+            auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
+
+            updateMarksAndTime(username, score, duration.count() / 1000);
+            writeUserLeaderData();
             if (send(clientSocket, &score, sizeof(score), 0) <= 0)
             {
                 perror("Score Not Sending: ");
@@ -197,7 +205,7 @@ void *handleClient(void *arg)
         {
             // Handle user registration request
             sem_post(regFileSemaphore);
-            registerUser(clientSocket);
+            username = registerUser(clientSocket);
             sem_wait(regFileSemaphore);
             break;
         }
@@ -205,7 +213,7 @@ void *handleClient(void *arg)
         {
             // Handle user login request
             sem_post(regFileSemaphore);
-            login(clientSocket);
+            username = login(clientSocket);
             sem_wait(regFileSemaphore);
             break;
         }
@@ -305,7 +313,7 @@ int main()
     int choice;
     while (true)
     {
-        cout << "Enter operation:\n1)Q SET\n2)Display questionBank\n3)Exit" << endl;
+        cout << "Enter operation:\n1)Q SET\n2)Display questionBank\n3)Leader\n4)Exit" << endl;
         cin >> choice;
         switch (choice)
         {
@@ -329,7 +337,11 @@ int main()
             }
             break;
         }
+
         case 3:
+            generateLeaderboard();
+            break;
+        case 4:
         {
             // Close the server socket and exit the program
             close(serverSocket);
