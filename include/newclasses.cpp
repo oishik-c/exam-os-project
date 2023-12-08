@@ -97,7 +97,12 @@ void User::checkLeaderboard(int &clientSocket)
     send(clientSocket, &code, sizeof(code), 0);
     textsendtype *leaderboardSent = new textsendtype;
     recv(clientSocket, leaderboardSent, sizeof(*leaderboardSent), 0);
+    reprintScreen();
     std::cout << leaderboardSent->buffer << endl;
+    std::cout << "Press any key to continue...\n";
+    getchar();
+    getchar();
+    reprintScreen();
 }
 
 // Implementation of the Student class using constructor
@@ -133,7 +138,7 @@ void Student::startExam(int clientSocket)
             examend = true;
             break;
         }
-        system("clear"); // Assuming a Unix-based system to clear the terminal
+        reprintScreen(); // Assuming a Unix-based system to clear the terminal
         std::cout << textToRead->buffer << endl
                   << "A: ";
         std::cin >> answer;
@@ -172,7 +177,6 @@ void Teacher::setQuestions(int &clientSocket, string &filepath)
         textToSend->bytesRead = questionFile.gcount();
         textToSend->code = SET_Q_REQUEST;
         send(clientSocket, textToSend, sizeof(*textToSend), 0);
-        std::cout << textToSend->buffer << endl;
         sleep(1);
     }
     textToSend->code = Q_END_SIG;
@@ -282,6 +286,7 @@ User *registerUserHelper(int &clientSocket, string &userType)
     User *user;
     if (code == RGSTR_SCCSFL)
     {
+        reprintScreen();
         if (userType == "S")
             user = new Student(newUserInfo->username, newUserInfo->password, newUserInfo->id);
         else
@@ -292,6 +297,7 @@ User *registerUserHelper(int &clientSocket, string &userType)
     else
     {
         std::cout << "Registration Failed! Server Error!" << endl;
+        sleep(3);
         return NULL; // User registration failed due to a server error
     }
 }
@@ -371,6 +377,7 @@ User *loginHelper(int &clientSocket, string &usertype)
     {
     case LGN_SCCSFL:
     {
+        reprintScreen();
         User *user;
         std::cout << "Welcome, " << newUserInfo->username << "!!" << endl;
         // Create a User object based on the user type (Student or Teacher).
@@ -383,11 +390,13 @@ User *loginHelper(int &clientSocket, string &usertype)
     case LGN_FAIL:
     {
         cerr << "Invalid Username or Password! Please retry login!";
+        sleep(3);
         return NULL; // User login failed due to incorrect credentials
     }
     case NO_SGNL:
     {
         cerr << "Login Failed!! Server Error!!" << endl;
+        sleep(3);
         return NULL; // User login failed due to a server error
     }
     }
@@ -426,7 +435,7 @@ Client::Client()
               << endl;
 
     int choice;
-    system("clear"); // Clear the terminal screen
+    reprintScreen(); // Clear the terminal screen
     std::cout << register_menu << "Choice: ";
     std::cin >> choice;
     switch (choice)
@@ -524,17 +533,20 @@ int Client::requests()
 
                 // Call the teacher's function to set questions using the provided text file.
                 teacher->setQuestions(this->clientSocket, filePath);
-                std::cout << "DONE" << endl;
                 recv(this->clientSocket, &code, sizeof(code), 0);
 
                 // Check if the questions were set successfully and provide feedback.
                 if (code == SET_Q_ACK)
                 {
                     std::cout << "Questions set successfully!!" << endl;
+                    sleep(3);
+                    reprintScreen();
                 }
                 else
                 {
                     cerr << "Questions set failed!!" << endl;
+                    sleep(3);
+                    reprintScreen();
                 }
                 break;
             }
@@ -547,6 +559,7 @@ int Client::requests()
                 bool questend = false;
                 while (true)
                 {
+                    reprintScreen();
                     // Receive and display questions until the "EOE" (End of Exam) signal is received.
                     if (recv(clientSocket, question, sizeof(*question), 0) <= 0)
                     {
@@ -559,7 +572,11 @@ int Client::requests()
                         questend = true;
                         break;
                     }
-                    std::cout << question->buffer << endl;
+                    std::cout << question->buffer << "\nPress a key for next question!" << endl;
+
+                    if (code == SEE_Q_REQUEST)
+                        getchar();
+                    getchar();
 
                     code = Q_RECV_SCCS;
                     send(clientSocket, &code, sizeof(code), 0);
@@ -585,6 +602,7 @@ int Client::requests()
                 send(this->clientSocket, &code, sizeof(code), 0);
                 // Assuming the server sends information about potential cheaters as strings
                 // Receive and print the strings until the end marker is received
+                reprintScreen();
                 cout << "We are searching for students for any cheating done in the test: " << endl;
 
                 while (!stringEnd)
@@ -596,7 +614,12 @@ int Client::requests()
                         cout << textSent->buffer << endl;
                     send(clientSocket, &code, sizeof(code), 0);
                 }
+                if (stringEnd)
+                    cout << "No data yet for exams!" << endl;
 
+                cout << "\nPress any key to continue...\n";
+                getchar();
+                getchar();
                 break;
             }
             case 5:
@@ -619,4 +642,11 @@ Client::~Client()
     endconnection(this->clientSocket);
     close(this->clientSocket);
     free(user);
+    system("clear");
+}
+
+void reprintScreen(void)
+{
+    system("clear");
+    std::cout << program_title;
 }

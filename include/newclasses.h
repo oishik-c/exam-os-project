@@ -165,4 +165,6 @@ User *loginHelper(int &clientSocket, string &usertype);
 // Function to end the client-server connection
 void endconnection(int clientSocket);
 
+void reprintScreen(void);
+
 #endif // NEWCLASSES_H

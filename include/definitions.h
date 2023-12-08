@@ -41,3 +41,4 @@
 #define register_menu "Enter your choice:\n1)Register\n2)Login\n3)Exit\n"
 #define student_menu "Enter your choice:\n1)Start Exam\n2)Check Leaderboard\n3)Exit\n"
 #define teacher_menu "Enter your choice:\n1)Set Questions\n2)See Questions\n3)Check Leaderboard\n4)See Student Statistic\n5)Exit\n"
+#define program_title "============================= MCQ Examination System =============================\n"
