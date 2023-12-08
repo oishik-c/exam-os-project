@@ -170,6 +170,8 @@ void sendStringSet(int clientSocket, const std::set<std::string> &stringSet)
 }
 
 // Function to detect potential cheating
+#include <cmath> // Include the cmath header for sqrt function
+
 set<string> detectPotentialCheating()
 {
     set<string> potentialCheaters;
@@ -180,19 +182,17 @@ set<string> detectPotentialCheating()
         return potentialCheaters;
     }
 
-    // Calculate total number of questions
     int numQuestions = timingmatrix[0].second.size();
-
-    // Vector to store average for each question
     vector<long double> questionAvg(numQuestions, 0.0);
     vector<long double> questionStD(numQuestions, 0.0);
 
-    // Calculate sum of responses for each question
+    // Calculate sum of responses and sum of squared differences for each question
     for (const auto &student : timingmatrix)
     {
         for (int i = 0; i < numQuestions; ++i)
         {
             questionAvg[i] += student.second[i];
+            questionStD[i] += pow(student.second[i] - questionAvg[i], 2);
         }
     }
 
@@ -200,21 +200,20 @@ set<string> detectPotentialCheating()
     for (int i = 0; i < numQuestions; ++i)
     {
         questionAvg[i] /= timingmatrix.size();
+        // Calculate standard deviation for each question
+        questionStD[i] = sqrt(questionStD[i] / timingmatrix.size());
     }
 
-    // Detect potential cheating
     for (const auto &student : timingmatrix)
     {
         for (int i = 0; i < numQuestions; ++i)
         {
             // Check if response deviates significantly from the average
-            if (abs(questionAvg[i] - student.second[i]) > 2000)
+            // Using a combination of average and standard deviation
+            if (student.second[i] < questionAvg[i] - 2 * questionStD[i])
             {
                 potentialCheaters.insert(student.first);
             }
-            // if (student.second[i]==questionAvg[i]) {
-            //     potentialCheaters.insert(student.first);
-            // }
         }
     }
 
