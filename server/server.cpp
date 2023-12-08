@@ -467,7 +467,7 @@ int main()
     int choice;
     while (true)
     {
-        cout << "Enter operation:\n1)Q SET\n2)Display questionBank\n3)Leader\n4)Exit" << endl;
+        cout << "Enter operation:\n1)Set questions\n2)Display question bank\n3)Leaderboard \n4)Exit" << endl;
         cin >> choice;
         switch (choice)
         {
