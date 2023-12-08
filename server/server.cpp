@@ -274,7 +274,7 @@ void *handleClient(void *arg)
             auto end_time = chrono::high_resolution_clock::now();
             auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
 
-            updateMarksAndTime(username, score, duration.count() / 1000);
+            updateMarksAndTime(username, score, duration.count());
             writeUserLeaderData();
             if (send(clientSocket, &score, sizeof(score), 0) <= 0)
             {

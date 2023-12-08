@@ -124,6 +124,7 @@ void Student::startExam(int clientSocket)
     int code = EXAM_START_REQUEST, score;
     send(clientSocket, &code, sizeof(code), 0);
     bool examend = false;
+    auto start = chrono::high_resolution_clock::now();
     while (true)
     {
         textsendtype *textToRead = new textsendtype;
@@ -148,9 +149,11 @@ void Student::startExam(int clientSocket)
     {
         std::cout << "Exam has ended!" << endl;
     }
+    auto end = chrono::high_resolution_clock::now();
     usleep(5000); // Pause for a short time to allow the server to process the results
     recv(clientSocket, &score, sizeof(score), 0);
     std::cout << "The score obtained: " << score << endl;
+    std::cout << "Time Elapsed: " << ((double)chrono::duration_cast<chrono::milliseconds>(end - start).count()) / 1000.0 << " seconds" << endl;
 }
 
 // Implementation of the Teacher class using constructor
