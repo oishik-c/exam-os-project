@@ -171,8 +171,6 @@ void sendStringSet(int clientSocket, const std::set<std::string> &stringSet)
 }
 
 // Function to detect potential cheating
-#include <cmath> // Include the cmath header for sqrt function
-
 set<string> detectPotentialCheating()
 {
     set<string> potentialCheaters;
@@ -193,7 +191,6 @@ set<string> detectPotentialCheating()
         for (int i = 0; i < numQuestions; ++i)
         {
             questionAvg[i] += student.second[i];
-            questionStD[i] += pow(student.second[i] - questionAvg[i], 2);
         }
     }
 
@@ -202,7 +199,12 @@ set<string> detectPotentialCheating()
     {
         questionAvg[i] /= timingmatrix.size();
         // Calculate standard deviation for each question
+        for (const auto &student : timingmatrix)
+        {
+            questionStD[i] += pow(student.second[i] - questionAvg[i], 2);
+        }
         questionStD[i] = sqrt(questionStD[i] / timingmatrix.size());
+        cout << questionAvg[i] << "|" << questionStD[i] << endl;
     }
 
     for (const auto &student : timingmatrix)
@@ -211,7 +213,7 @@ set<string> detectPotentialCheating()
         {
             // Check if response deviates significantly from the average
             // Using a combination of average and standard deviation
-            if (student.second[i] < questionAvg[i] - 2 * questionStD[i])
+            if (student.second[i] < questionAvg[i] - questionStD[i])
             {
                 potentialCheaters.insert(student.first);
             }

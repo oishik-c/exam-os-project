@@ -334,7 +334,7 @@ string login(int &clientSocket)
                         string storedId = userTypeId.substr(pos3 + 1);
                         string generatedPassword = encryptString(newUserInfo->password, key);
                         // Compare the login credentials with stored credentials.
-                        if (uname == storedUsername && generatedPassword == storedPassword)
+                        if (uname == storedUsername && generatedPassword == storedPassword && newUserInfo->type == storedUserType)
                         {
                             code = LGN_SCCSFL; // Login successful
                             break;
@@ -508,6 +508,11 @@ int Client::requests()
                 close(this->clientSocket);
                 exit(0);
             }
+            default:
+            {
+                reprintScreen();
+                break;
+            }
             }
         }
     }
@@ -614,12 +619,13 @@ int Client::requests()
                         cout << textSent->buffer << endl;
                     send(clientSocket, &code, sizeof(code), 0);
                 }
-                if (stringEnd)
-                    cout << "No data yet for exams!" << endl;
+                // if (stringEnd)
+                //     cout << "No data yet for exams!" << endl;
 
                 cout << "\nPress any key to continue...\n";
                 getchar();
                 getchar();
+                reprintScreen();
                 break;
             }
             case 5:
@@ -628,6 +634,11 @@ int Client::requests()
                 endconnection(this->clientSocket);
                 close(this->clientSocket);
                 exit(0);
+            }
+            default:
+            {
+                reprintScreen();
+                break;
             }
             }
         }
